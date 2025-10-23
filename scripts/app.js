@@ -136,9 +136,15 @@
       counts.className = "pill";
       counts.textContent = `${r.records_with_valid_recordedbyid} / ${r.total_records}`;
 
+      const invalidCount = parseNumber(r.records_with_invalid_recordedbyid);
+      const invalid = document.createElement("div");
+      invalid.className = "pill danger";
+      invalid.textContent = `${invalidCount} invalid`;
+
       item.appendChild(title);
       item.appendChild(pct);
       item.appendChild(counts);
+      if (invalidCount > 0) item.appendChild(invalid);
       els.list.appendChild(item);
     });
 
