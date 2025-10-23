@@ -24,6 +24,9 @@
     list: document.getElementById("entity-list"),
     canvas: document.getElementById("pie-canvas"),
     meta: document.getElementById("detail-meta"),
+    btnInvalid: document.getElementById("btn-invalid"),
+    btnValid: document.getElementById("btn-valid"),
+    btnMissing: document.getElementById("btn-missing"),
   };
 
   function parseNumber(value) {
@@ -170,6 +173,41 @@
     parts.push(`<span>Total: ${row.total_records.toLocaleString()}</span>`);
     parts.push(`<span>With recordedById: ${row.records_with_recordedbyid.toLocaleString()} (${row.pct_with_recordedbyid.toFixed(2)}%)</span>`);
     els.meta.innerHTML = parts.join(" • ");
+
+    updateActionLinks(row);
+  }
+
+  function updateActionLinks(row) {
+    const keyField = STATE.activeTab === "publisher" ? "publishingOrgKey" : "hostingOrganizationKey";
+    const keyVal = row.key;
+    const where = `${keyField} = '${keyVal}'`;
+
+    const validPredicate = `(${[
+      "GBIF_StringArrayLike(recordedByID, 'https://orcid.org/*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'http://orcid.org/*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'https://scholar.google.com/citations?user=*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'http://scholar.google.com/citations?user=*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'https://www.researcherid.com/rid/*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'http://www.researcherid.com/rid/*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'https://www.wikidata.org/entity/*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'http://www.wikidata.org/entity/*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'https://www.linkedin.com/profile/view?id=*', FALSE)",
+      "GBIF_StringArrayLike(recordedByID, 'http://www.linkedin.com/profile/view?id=*', FALSE)",
+    ].join(" OR ")})`;
+
+    const sqlInvalid = `SELECT * FROM occurrence WHERE ${where} AND recordedByID IS NOT NULL AND NOT ${validPredicate} LIMIT 1000`;
+    const sqlValid = `SELECT * FROM occurrence WHERE ${where} AND ${validPredicate} LIMIT 1000`;
+    const sqlMissing = `SELECT * FROM occurrence WHERE ${where} AND recordedByID IS NULL LIMIT 1000`;
+
+    els.btnInvalid.href = buildGbifSqlUrl(sqlInvalid);
+    els.btnValid.href = buildGbifSqlUrl(sqlValid);
+    els.btnMissing.href = buildGbifSqlUrl(sqlMissing);
+  }
+
+  function buildGbifSqlUrl(sql) {
+    const base = "https://www.gbif.org/occurrence/download/sql?sql=";
+    // GBIF expects URL-encoded SQL; encodeURIComponent plus replacing parentheses/spaces already handled
+    return base + encodeURIComponent(sql);
   }
 
   function renderChart(row) {
@@ -267,6 +305,12 @@
     els.tabHosting.addEventListener("click", () => setActiveTab("hosting"));
     els.search.addEventListener("input", () => renderList());
     els.sort.addEventListener("change", () => renderList());
+    [els.btnInvalid, els.btnValid, els.btnMissing].forEach(a => a && a.addEventListener('click', (e) => {
+      // ensure href is present; if not (no selection yet), prevent navigation
+      if (!e.currentTarget.href || e.currentTarget.href.endsWith('#')) {
+        e.preventDefault();
+      }
+    }));
   }
 
   function loadCsv(path, normalizeFn, configOverrides = {}) {
