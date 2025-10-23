@@ -115,4 +115,23 @@ body {
   .content { grid-template-columns: 1fr; }
 }
 
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  .site-header { padding: 16px 12px 6px; }
+  .site-header h1 { font-size: 18px; }
+  .site-header .subtitle { font-size: 12px; }
+
+  .container { padding: 0 12px 12px; height: auto; min-height: 100vh; }
+  .controls { padding: 8px; }
+
+  .tabs { gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .tab { flex: 0 0 auto; white-space: nowrap; padding: 8px 10px; }
+
+  .filters { display: grid; grid-template-columns: 1fr; gap: 8px; margin-left: 0; margin-top: 8px; }
+  .filters label { width: 100%; }
+  .filters input, .filters select { width: 100%; }
+
+  .detail { min-height: 320px; }
+}
+
 
