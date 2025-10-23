@@ -1,14 +1,15 @@
 /* globals Papa, Chart */
 
+// Copied from web/app.js with paths adjusted for root-based hosting
 (function () {
   const PATHS = {
-    // relative to web/ when served from repo root via a static server
-    publisher: "../out-recordedby_publisher/0052593-251009101135966.csv",
-    hosting: "../out-recordedby_hostingorg/0051475-251009101135966-enriched.csv",
+    // relative to repo root
+    publisher: "out-recordedby_publisher/0052593-251009101135966.csv",
+    hosting: "out-recordedby_hostingorg/0051475-251009101135966-enriched.csv",
   };
 
   const STATE = {
-    activeTab: "publisher", // 'publisher' | 'hosting'
+    activeTab: "publisher",
     data: { publisher: [], hosting: [] },
     filtered: [],
     selection: null,
@@ -58,7 +59,6 @@
   }
 
   function normalizeRowHosting(row) {
-    // enriched file has header with commas, original may be tab-separated; Papa handles both
     return {
       key: row.hostingorganizationkey || row["hostingorganizationkey"],
       name: row.publisherName || row["publisherName"] || row.publishername || row["publishername"] || row.hostingorganizationkey,
@@ -95,11 +95,9 @@
       const av = parseNumber(a[sortKey]);
       const bv = parseNumber(b[sortKey]);
       if (av === bv) {
-        // secondary by records_with_valid_recordedbyid desc
         const a2 = parseNumber(a.records_with_valid_recordedbyid);
         const b2 = parseNumber(b.records_with_valid_recordedbyid);
         if (a2 === b2) {
-          // tertiary by total_records desc for stability on small sets
           const a3 = parseNumber(a.total_records);
           const b3 = parseNumber(b.total_records);
           return b3 - a3;
@@ -180,7 +178,6 @@
     const wikidata = parseNumber(row.records_with_wikidata);
     const linkedin = parseNumber(row.records_with_linkedin);
 
-    // Other valid is what's left after known typed IDs (non-negative)
     const knownSum = orcid + gscholar + researcherid + wikidata + linkedin;
     const otherValid = Math.max(0, valid - knownSum);
 
@@ -205,14 +202,14 @@
       none,
     ];
     const colors = [
-      "#7ed3b2", // orcid
-      "#5b8cff", // scholar
-      "#8e87ff", // researcherid
-      "#f2a97f", // wikidata
-      "#e67dd5", // linkedin
-      "#4fd1c5", // other valid
-      "#ff6b6b", // invalid
-      "#a8b3cf", // none
+      "#7ed3b2",
+      "#5b8cff",
+      "#8e87ff",
+      "#f2a97f",
+      "#e67dd5",
+      "#4fd1c5",
+      "#ff6b6b",
+      "#a8b3cf",
     ];
 
     const total = values.reduce((a, b) => a + b, 0);
@@ -286,9 +283,7 @@
 
     try {
       const [pubRows, hostRows] = await Promise.all([
-        // Publisher file is TSV; quotes are literal, disable quote/escape handling
         loadCsv(PATHS.publisher, normalizeRowPublisher, { delimiter: "\t", quoteChar: '', escapeChar: '' }),
-        // Hosting org enriched is CSV
         loadCsv(PATHS.hosting, normalizeRowHosting),
       ]);
       STATE.data.publisher = pubRows;
@@ -296,11 +291,10 @@
       renderList();
     } catch (e) {
       console.error("Failed to load CSVs", e);
-      els.list.innerHTML = `<div style="padding:12px;color:#f88">Failed to load CSVs. Check paths in app.js.</div>`;
+      els.list.innerHTML = `<div style="padding:12px;color:#f88">Failed to load CSVs. Check paths in scripts/app.js.</div>`;
     }
   }
 
-  // Boot
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

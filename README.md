@@ -53,15 +53,18 @@ Documentation reference: [GBIF API SQL Downloads](https://techdocs.gbif.org/en/d
 
 ## Web visualization
 
-Static viewer is under `web/` and loads the CSVs from `out-recordedby_publisher/` and `out-recordedby_hostingorg/`.
+Static viewer is at repo root (`index.html`) and loads the CSVs directly from `out-recordedby_publisher/` and `out-recordedby_hostingorg/`. Assets are in `scripts/`.
 
 Serve locally (from repo root):
 
 ```bash
-cd web
 python3 -m http.server 8080
 # open http://localhost:8080
 ```
+
+Deploy on GitHub Pages:
+- Push to a branch and enable Pages for the repository (Deploy from Branch) targeting the root.
+- The page will be served from `/index.html` and fetch the CSVs at `out-recordedby_*` paths.
 
 Features:
 - Toggle tabs: by publisher or by hosting org
