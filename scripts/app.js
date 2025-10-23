@@ -224,8 +224,10 @@
           tooltip: {
             callbacks: {
               label: (ctx) => {
-                const val = ctx.parsed;
-                const pct = total > 0 ? (val / total) * 100 : 0;
+                const val = Number(ctx.parsed) || 0;
+                const dataArr = ctx.chart.data.datasets[ctx.datasetIndex]?.data || [];
+                const den = dataArr.reduce((acc, v) => acc + (typeof v === 'number' ? v : (Number(v) || 0)), 0);
+                const pct = den > 0 ? (val / den) * 100 : 0;
                 return `${ctx.label}: ${val.toLocaleString()} (${pct.toFixed(2)}%)`;
               },
             },
