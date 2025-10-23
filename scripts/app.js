@@ -195,9 +195,19 @@
       "GBIF_StringArrayLike(recordedByID, 'http://www.linkedin.com/profile/view?id=*', FALSE)",
     ].join(" OR ")})`;
 
-    const sqlInvalid = `SELECT * FROM occurrence WHERE ${where} AND recordedByID IS NOT NULL AND NOT ${validPredicate} LIMIT 1000`;
-    const sqlValid = `SELECT * FROM occurrence WHERE ${where} AND ${validPredicate} LIMIT 1000`;
-    const sqlMissing = `SELECT * FROM occurrence WHERE ${where} AND recordedByID IS NULL LIMIT 1000`;
+    const selectCols = [
+      "datasetName",
+      "datasetKey AS datasetId",
+      "occurrenceID",
+      "recordedBy",
+      "recordedByID",
+      "publisher",
+      "publishingOrgKey"
+    ].join(", ");
+
+    const sqlInvalid = `SELECT ${selectCols} FROM occurrence WHERE ${where} AND recordedByID IS NOT NULL AND NOT ${validPredicate} LIMIT 1000`;
+    const sqlValid = `SELECT ${selectCols} FROM occurrence WHERE ${where} AND ${validPredicate} LIMIT 1000`;
+    const sqlMissing = `SELECT ${selectCols} FROM occurrence WHERE ${where} AND recordedByID IS NULL LIMIT 1000`;
 
     els.btnInvalid.href = buildGbifSqlUrl(sqlInvalid);
     els.btnValid.href = buildGbifSqlUrl(sqlValid);
