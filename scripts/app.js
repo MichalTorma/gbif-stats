@@ -6,6 +6,8 @@
     // relative to repo root
     publisher: "out-recordedby_publisher/0052593-251009101135966.csv",
     hosting: "out-recordedby_hostingorg/0051475-251009101135966-enriched.csv",
+    nodeAgg: "out-by-node/recordedby_by_node.csv",
+    nodesMap: "out-nodes/nodes.json",
   };
 
   const STATE = {
@@ -19,6 +21,7 @@
   const els = {
     tabPublisher: document.getElementById("tab-publisher"),
     tabHosting: document.getElementById("tab-hosting"),
+    tabNode: document.getElementById("tab-node"),
     search: document.getElementById("search-input"),
     sort: document.getElementById("sort-select"),
     list: document.getElementById("entity-list"),
@@ -83,6 +86,31 @@
       pct_with_wikidata: parseNumber(row.pct_with_wikidata || row["pct_with_wikidata"]),
       records_with_linkedin: parseNumber(row.records_with_linkedin || row["records_with_linkedin"]),
       pct_with_linkedin: parseNumber(row.pct_with_linkedin || row["pct_with_linkedin"]),
+    };
+  }
+
+  function normalizeRowNode(row) {
+    return {
+      key: row.nodeKey || row["nodeKey"],
+      name: row.nodeTitle || row["nodeTitle"],
+      total_records: parseNumber(row.total_records || row["total_records"]),
+      records_with_recordedbyid: parseNumber(row.records_with_recordedbyid || row["records_with_recordedbyid"]),
+      pct_with_recordedbyid: parseNumber(row.pct_with_recordedbyid || row["pct_with_recordedbyid"]),
+      records_with_valid_recordedbyid: parseNumber(row.records_with_valid_recordedbyid || row["records_with_valid_recordedbyid"]),
+      pct_valid_recordedbyid: parseNumber(row.pct_valid_recordedbyid || row["pct_valid_recordedbyid"]),
+      records_with_invalid_recordedbyid: parseNumber(row.records_with_invalid_recordedbyid || row["records_with_invalid_recordedbyid"]),
+      pct_invalid_recordedbyid: parseNumber(row.pct_invalid_recordedbyid || row["pct_invalid_recordedbyid"]),
+      records_with_orcid: parseNumber(row.records_with_orcid || row["records_with_orcid"]),
+      pct_with_orcid: parseNumber(row.pct_with_orcid || row["pct_with_orcid"]),
+      records_with_google_scholar: parseNumber(row.records_with_google_scholar || row["records_with_google_scholar"]),
+      pct_with_google_scholar: parseNumber(row.pct_with_google_scholar || row["pct_with_google_scholar"]),
+      records_with_researcherid: parseNumber(row.records_with_researcherid || row["records_with_researcherid"]),
+      pct_with_researcherid: parseNumber(row.pct_with_researcherid || row["pct_with_researcherid"]),
+      records_with_wikidata: parseNumber(row.records_with_wikidata || row["records_with_wikidata"]),
+      pct_with_wikidata: parseNumber(row.pct_with_wikidata || row["pct_with_wikidata"]),
+      records_with_linkedin: parseNumber(row.records_with_linkedin || row["records_with_linkedin"]),
+      pct_with_linkedin: parseNumber(row.pct_with_linkedin || row["pct_with_linkedin"]),
+      orgCount: parseNumber(row.orgCount || row["orgCount"]),
     };
   }
 
@@ -178,9 +206,17 @@
   }
 
   function updateActionLinks(row) {
-    const keyField = STATE.activeTab === "publisher" ? "publishingOrgKey" : "hostingOrganizationKey";
-    const keyVal = row.key;
-    const where = `${keyField} = '${keyVal}'`;
+    let where = "1=1";
+    if (STATE.activeTab === "publisher") {
+      where = `publishingOrgKey = '${row.key}'`;
+    } else if (STATE.activeTab === "hosting") {
+      where = `hostingOrganizationKey = '${row.key}'`;
+    } else if (STATE.activeTab === "node") {
+      // Build IN (...) from nodes.json
+      const node = (STATE.nodes || []).find(n => String(n.nodeKey) === String(row.key));
+      const orgKeys = (node?.organizations || []).map(o => `'${o.key}'`);
+      where = orgKeys.length ? `publishingOrgKey IN (${orgKeys.join(",")})` : "1=0";
+    }
 
     const validPredicate = `(${[
       "GBIF_StringArrayLike(recordedByID, 'https://orcid.org/*', FALSE)",
@@ -307,12 +343,14 @@
     STATE.activeTab = tab;
     els.tabPublisher.classList.toggle("active", tab === "publisher");
     els.tabHosting.classList.toggle("active", tab === "hosting");
+    els.tabNode.classList.toggle("active", tab === "node");
     renderList();
   }
 
   function wireEvents() {
     els.tabPublisher.addEventListener("click", () => setActiveTab("publisher"));
     els.tabHosting.addEventListener("click", () => setActiveTab("hosting"));
+    els.tabNode.addEventListener("click", () => setActiveTab("node"));
     els.search.addEventListener("input", () => renderList());
     els.sort.addEventListener("change", () => renderList());
     [els.btnInvalid, els.btnValid, els.btnMissing].forEach(a => a && a.addEventListener('click', (e) => {
@@ -344,12 +382,16 @@
     wireEvents();
 
     try {
-      const [pubRows, hostRows] = await Promise.all([
+      const [pubRows, hostRows, nodeAggRows, nodesJson] = await Promise.all([
         loadCsv(PATHS.publisher, normalizeRowPublisher, { delimiter: "\t", quoteChar: '', escapeChar: '' }),
         loadCsv(PATHS.hosting, normalizeRowHosting),
+        loadCsv(PATHS.nodeAgg, normalizeRowNode),
+        fetch(PATHS.nodesMap).then(r => r.ok ? r.json() : []),
       ]);
       STATE.data.publisher = pubRows;
       STATE.data.hosting = hostRows;
+      STATE.data.node = nodeAggRows;
+      STATE.nodes = nodesJson;
       renderList();
     } catch (e) {
       console.error("Failed to load CSVs", e);

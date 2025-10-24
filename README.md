@@ -70,4 +70,32 @@ Features:
 - Toggle tabs: by publisher or by hosting org
 - Search filter and sort (default: pct valid desc, then valid count desc)
 - Click an item to see a pie chart showing: ORCID, Google Scholar, ResearcherID, Wikidata, LinkedIn, Other valid, Invalid, None
+- Actions panel: open GBIF SQL with pre-filled queries for Valid / Invalid / Missing
+
+### By GBIF Node (preload)
+
+1) Preload nodes and endorsed organizations:
+
+```bash
+python preload_nodes.py --timeout 30
+```
+
+Outputs:
+- `out-nodes/nodes.json`
+- `out-nodes/node-org-map.csv`
+
+2) Aggregate existing publisher stats to Node-level:
+
+```bash
+python aggregate_by_node.py \
+  out-nodes/node-org-map.csv \
+  out-recordedby_publisher/0052593-251009101135966.csv \
+  out-nodes/nodes.json \
+  out-by-node/recordedby_by_node.csv
+```
+
+3) Open the site; select the "By node" tab.
+
+Notes:
+- SQL links for nodes use `publishingOrgKey IN (...)` with all endorsed organizations. Very large lists may exceed URL length limits in browsers.
 
