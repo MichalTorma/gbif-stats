@@ -247,12 +247,11 @@
     const sqlMissing = `SELECT ${selectCols} FROM occurrence WHERE ${where} AND recordedByID IS NULL`;
 
     const sqlTopNames =
-      `SELECT TRIM(n) AS name, COUNT(*) AS occurrences\n` +
+      `SELECT CONCAT_WS(' | ', recordedBy) AS recordedBy_names, COUNT(*) AS occurrences\n` +
       `FROM occurrence\n` +
-      `CROSS JOIN UNNEST(recordedBy) AS r(n)\n` +
-      `WHERE ${where} AND recordedByID IS NULL AND recordedBy IS NOT NULL AND n IS NOT NULL AND TRIM(n) <> ''\n` +
-      `GROUP BY TRIM(n)\n` +
-      `ORDER BY occurrences DESC, name ASC\n` +
+      `WHERE ${where} AND recordedByID IS NULL AND recordedBy IS NOT NULL\n` +
+      `GROUP BY recordedBy_names\n` +
+      `ORDER BY occurrences DESC, recordedBy_names ASC\n` +
       `LIMIT 200`;
 
     els.btnInvalid.href = buildGbifSqlUrl(sqlInvalid);
