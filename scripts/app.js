@@ -30,6 +30,7 @@
     btnInvalid: document.getElementById("btn-invalid"),
     btnValid: document.getElementById("btn-valid"),
     btnMissing: document.getElementById("btn-missing"),
+    btnTopNames: document.getElementById("btn-topnames"),
   };
 
   function parseNumber(value) {
@@ -245,9 +246,19 @@
     const sqlValid = `SELECT ${selectCols} FROM occurrence WHERE ${where} AND ${validPredicate}`;
     const sqlMissing = `SELECT ${selectCols} FROM occurrence WHERE ${where} AND recordedByID IS NULL`;
 
+    const sqlTopNames =
+      `SELECT TRIM(n) AS name, COUNT(*) AS occurrences\n` +
+      `FROM occurrence\n` +
+      `CROSS JOIN UNNEST(recordedBy) AS r(n)\n` +
+      `WHERE ${where} AND recordedByID IS NULL AND recordedBy IS NOT NULL AND n IS NOT NULL AND TRIM(n) <> ''\n` +
+      `GROUP BY TRIM(n)\n` +
+      `ORDER BY occurrences DESC, name ASC\n` +
+      `LIMIT 200`;
+
     els.btnInvalid.href = buildGbifSqlUrl(sqlInvalid);
     els.btnValid.href = buildGbifSqlUrl(sqlValid);
     els.btnMissing.href = buildGbifSqlUrl(sqlMissing);
+    if (els.btnTopNames) els.btnTopNames.href = buildGbifSqlUrl(sqlTopNames);
   }
 
   function buildGbifSqlUrl(sql) {
@@ -353,7 +364,7 @@
     els.tabNode.addEventListener("click", () => setActiveTab("node"));
     els.search.addEventListener("input", () => renderList());
     els.sort.addEventListener("change", () => renderList());
-    [els.btnInvalid, els.btnValid, els.btnMissing].forEach(a => a && a.addEventListener('click', (e) => {
+    [els.btnInvalid, els.btnValid, els.btnMissing, els.btnTopNames].forEach(a => a && a.addEventListener('click', (e) => {
       // ensure href is present; if not (no selection yet), prevent navigation
       if (!e.currentTarget.href || e.currentTarget.href.endsWith('#')) {
         e.preventDefault();
